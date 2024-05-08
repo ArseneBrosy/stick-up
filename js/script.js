@@ -53,7 +53,16 @@ let level = {};
 
 //region FUNCTIONS
 function groundDistance() {
-    return -player.y;
+    let distance = -player.y;
+    let playerLeft = player.x - player.WIDTH / 2;
+    let playerRight = player.x + player.WIDTH / 2;
+    for (let wall of level.walls[0]) {
+        if (wall.y1 <= -player.y + 5 && wall.x1 < playerRight && wall.x2 > playerLeft) {
+            let groundDistance = -player.y - wall.y1;
+            distance = Math.min(groundDistance, distance);
+        }
+    }
+    return distance
 }
 
 function wallDistance() {
