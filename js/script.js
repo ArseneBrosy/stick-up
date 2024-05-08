@@ -6,6 +6,8 @@ canvas.width = 2000;
 canvas.height = 2000 * canvas.clientHeight / canvas.clientWidth;
 
 //region CONSTANTS
+GROUND_FRICTION = 0.4;
+GRAVITY = 0.3;
 //endregion
 
 //region VARIABLES
@@ -19,10 +21,16 @@ let mouse = {
 let player = {
     x: canvas.width / 2,
     y: 0,
-    stickAngle: 0,
+    velocityX: 0,
+    velocityY: 0,
+    grounded: true,
+    stick: {
+        angle: 0
+    },
 
     WIDTH: 100,
-    HEIGHT: 100
+    HEIGHT: 100,
+    FORCE: 10
 };
 
 let camera = {
@@ -31,10 +39,42 @@ let camera = {
 //endregion
 
 //region FUNCTIONS
+function groundDistance() {
+    return -player.y;
+}
+
+function jump() {
+    if (!player.grounded) {
+        return;
+    }
+    let forceX = Math.sin(player.stick.angle * (Math.PI/180)) * player.FORCE;
+    let forceY = Math.cos(player.stick.angle * (Math.PI/180)) * player.FORCE;
+    player.velocityX = forceX;
+    player.velocityY = -forceY;
+    player.grounded = false;
+}
 //endregion
 
 setInterval(() => {
     //region PHYSICS
+    player.x += player.velocityX;
+    player.y += player.velocityY;
+
+    const groundDis = groundDistance();
+    if (player.velocityY > groundDis) {
+        player.grounded = true;
+        player.y += groundDis;
+    } else {
+        player.velocityY += GRAVITY;
+    }
+    if (player.grounded) {
+        if (Math.abs(player.velocityX) < GROUND_FRICTION) {
+            player.velocityX = 0;
+        } else {
+            player.velocityX -= player.velocityX > 0 ? GROUND_FRICTION : -GROUND_FRICTION;
+        }
+        player.velocityY = 0;
+    }
     //endregion
 
     //region DRAW
@@ -49,9 +89,9 @@ setInterval(() => {
     // stick
     ctx.fillStyle = "blue";
     ctx.translate(player.x, player.y - camera.y);
-    ctx.rotate(player.stickAngle * (Math.PI/180));
+    ctx.rotate(player.stick.angle * (Math.PI/180));
     ctx.fillRect(-10, -50, 20, 100);
-    ctx.rotate(-player.stickAngle * (Math.PI/180));
+    ctx.rotate(-player.stick.angle * (Math.PI/180));
     ctx.translate(-player.x, -player.y - camera.y);
 
     //endregion
@@ -69,13 +109,11 @@ document.addEventListener("mousemove", (e) => {
     if (dirX < 0) {
         angle -= 180;
     }
-    player.stickAngle = angle;
+    player.stick.angle = angle;
 });
 
 document.addEventListener("mousedown", (e) => {
     if (e.button === 0) {
-        let forceY = Math.cos(player.stickAngle * (Math.PI/180));
-        let forceX = Math.sin(player.stickAngle * (Math.PI/180));
-        console.log(forceX + " : " + forceY);
+        jump();
     }
 });
