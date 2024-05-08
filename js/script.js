@@ -51,6 +51,16 @@ function groundDistance() {
     return -player.y;
 }
 
+function wallDistance() {
+    if (player.velocityX > 0) {
+        return 2000 - player.x - player.WIDTH / 2;
+    }
+    if (player.velocityX < 0) {
+        return player.x - player.WIDTH / 2;
+    }
+    return 0;
+}
+
 function jump() {
     player.stick.loading = false;
     if (!player.grounded) {
@@ -83,25 +93,33 @@ setInterval(() => {
         jump();
     }
 
-    // velocity
-    player.x += player.velocityX;
-    player.y += player.velocityY;
-
     // gravity
     const groundDis = groundDistance();
     if (player.velocityY > groundDis) {
         player.grounded = true;
         player.y += groundDis;
+        player.velocityY = 0;
     } else {
         player.velocityY += GRAVITY;
+        player.y += player.velocityY;
     }
+
+    // friction
     if (player.grounded) {
         if (Math.abs(player.velocityX) < GROUND_FRICTION) {
             player.velocityX = 0;
         } else {
             player.velocityX -= player.velocityX > 0 ? GROUND_FRICTION : -GROUND_FRICTION;
         }
-        player.velocityY = 0;
+    }
+
+    // velocity X
+    const wallDis = wallDistance();
+    if (Math.abs(player.velocityX) > wallDis) {
+        player.x += player.velocityX > 0 ? wallDis : -wallDis;
+        player.velocityX *= -1;
+    } else {
+        player.x += player.velocityX;
     }
     //endregion
 
