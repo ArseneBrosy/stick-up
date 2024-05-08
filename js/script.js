@@ -24,6 +24,8 @@ let player = {
     velocityX: 0,
     velocityY: 0,
     grounded: true,
+    willJump: false,
+    nextJumpForce: 0,
     stick: {
         angle: 0,
         loadingState: 0,
@@ -33,7 +35,9 @@ let player = {
     WIDTH: 100,
     HEIGHT: 100,
     FORCE: 10,
+    MAX_ANGLE: 50,
     LOADING_TIME: 100,
+    HIT_TIME: 15,
     LOADING_DISTANCE: 50
 };
 
@@ -48,13 +52,12 @@ function groundDistance() {
 }
 
 function jump() {
-    let force = player.FORCE * player.stick.loadingState / player.LOADING_TIME;
-    player.stick.loadingState = 0;
+    player.stick.loading = false;
     if (!player.grounded) {
         return;
     }
-    let forceX = Math.sin(player.stick.angle * (Math.PI/180)) * force;
-    let forceY = Math.cos(player.stick.angle * (Math.PI/180)) * force;
+    let forceX = Math.sin(player.stick.angle * (Math.PI/180)) * player.nextJumpForce;
+    let forceY = Math.cos(player.stick.angle * (Math.PI/180)) * player.nextJumpForce;
     player.velocityX = forceX;
     player.velocityY = -forceY;
     player.grounded = false;
@@ -63,17 +66,28 @@ function jump() {
 
 setInterval(() => {
     //region PHYSICS
+    // stick clamp angle
+    player.stick.angle = Math.min(Math.max(player.stick.angle, -player.MAX_ANGLE), player.MAX_ANGLE);
+
+    // stick loading
     if (player.stick.loading) {
-        if (player.stick.loadingState < player.LOADING_TIME) {
-            player.stick.loadingState ++;
-        }
-    } else if (player.stick.loadingState > 0) {
+        player.stick.loadingState ++;
+    } else {
+        player.stick.loadingState -= player.LOADING_TIME / player.HIT_TIME;
+    }
+    player.stick.loadingState = Math.min(Math.max(player.stick.loadingState, 0), player.LOADING_TIME);
+
+    // jump
+    if (player.stick.loadingState <= 0 && player.willJump) {
+        player.willJump = false;
         jump();
     }
 
+    // velocity
     player.x += player.velocityX;
     player.y += player.velocityY;
 
+    // gravity
     const groundDis = groundDistance();
     if (player.velocityY > groundDis) {
         player.grounded = true;
@@ -125,7 +139,7 @@ document.addEventListener("mousemove", (e) => {
     if (dirX < 0) {
         angle -= 180;
     }
-    if (!player.stick.loading) {
+    if (player.stick.loadingState === 0) {
         player.stick.angle = angle;
     }
 });
@@ -138,6 +152,8 @@ document.addEventListener("mousedown", (e) => {
 
 document.addEventListener("mouseup", (e) => {
     if (e.button === 0) {
+        player.nextJumpForce = player.FORCE * player.stick.loadingState / player.LOADING_TIME;
         player.stick.loading = false;
+        player.willJump = true;
     }
 });
