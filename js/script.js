@@ -76,6 +76,20 @@ function jump() {
 
 setInterval(() => {
     //region PHYSICS
+
+    // stick angle
+    let dirX = mouse.x - player.x;
+    let dirY = mouse.y - (player.y - camera.y);
+
+    let angle = Math.atan(dirY/dirX)*(180/Math.PI);
+    angle += 90;
+    if (dirX < 0) {
+        angle -= 180;
+    }
+    if (player.stick.loadingState === 0) {
+        player.stick.angle = angle;
+    }
+
     // stick clamp angle
     player.stick.angle = Math.min(Math.max(player.stick.angle, -player.MAX_ANGLE), player.MAX_ANGLE);
 
@@ -148,18 +162,6 @@ setInterval(() => {
 document.addEventListener("mousemove", (e) => {
     mouse.x = e.clientX / canvas.clientWidth * canvas.width;
     mouse.y = e.clientY / canvas.clientHeight * canvas.height;
-
-    let dirX = mouse.x - player.x;
-    let dirY = mouse.y - (player.y - camera.y);
-
-    let angle = Math.atan(dirY/dirX)*(180/Math.PI);
-    angle += 90;
-    if (dirX < 0) {
-        angle -= 180;
-    }
-    if (player.stick.loadingState === 0) {
-        player.stick.angle = angle;
-    }
 });
 
 document.addEventListener("mousedown", (e) => {
