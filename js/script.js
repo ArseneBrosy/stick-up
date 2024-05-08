@@ -25,12 +25,16 @@ let player = {
     velocityY: 0,
     grounded: true,
     stick: {
-        angle: 0
+        angle: 0,
+        loadingState: 0,
+        loading: false
     },
 
     WIDTH: 100,
     HEIGHT: 100,
-    FORCE: 10
+    FORCE: 10,
+    LOADING_TIME: 100,
+    LOADING_DISTANCE: 50
 };
 
 let camera = {
@@ -44,11 +48,13 @@ function groundDistance() {
 }
 
 function jump() {
+    let force = player.FORCE * player.stick.loadingState / player.LOADING_TIME;
+    player.stick.loadingState = 0;
     if (!player.grounded) {
         return;
     }
-    let forceX = Math.sin(player.stick.angle * (Math.PI/180)) * player.FORCE;
-    let forceY = Math.cos(player.stick.angle * (Math.PI/180)) * player.FORCE;
+    let forceX = Math.sin(player.stick.angle * (Math.PI/180)) * force;
+    let forceY = Math.cos(player.stick.angle * (Math.PI/180)) * force;
     player.velocityX = forceX;
     player.velocityY = -forceY;
     player.grounded = false;
@@ -57,6 +63,14 @@ function jump() {
 
 setInterval(() => {
     //region PHYSICS
+    if (player.stick.loading) {
+        if (player.stick.loadingState < player.LOADING_TIME) {
+            player.stick.loadingState ++;
+        }
+    } else if (player.stick.loadingState > 0) {
+        jump();
+    }
+
     player.x += player.velocityX;
     player.y += player.velocityY;
 
@@ -88,11 +102,13 @@ setInterval(() => {
 
     // stick
     ctx.fillStyle = "blue";
-    ctx.translate(player.x, player.y - camera.y);
+    let offsetX = Math.sin(player.stick.angle * (Math.PI/180)) * player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME;
+    let offsetY = Math.cos(player.stick.angle * (Math.PI/180)) * player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME;
+    ctx.translate(player.x + offsetX, player.y - camera.y - offsetY);
     ctx.rotate(player.stick.angle * (Math.PI/180));
     ctx.fillRect(-10, -50, 20, 100);
     ctx.rotate(-player.stick.angle * (Math.PI/180));
-    ctx.translate(-player.x, -player.y - camera.y);
+    ctx.translate(-player.x + offsetX, -player.y - camera.y - offsetY);
 
     //endregion
 }, 0);
@@ -109,11 +125,19 @@ document.addEventListener("mousemove", (e) => {
     if (dirX < 0) {
         angle -= 180;
     }
-    player.stick.angle = angle;
+    if (!player.stick.loading) {
+        player.stick.angle = angle;
+    }
 });
 
 document.addEventListener("mousedown", (e) => {
     if (e.button === 0) {
-        jump();
+        player.stick.loading = true;
+    }
+});
+
+document.addEventListener("mouseup", (e) => {
+    if (e.button === 0) {
+        player.stick.loading = false;
     }
 });
