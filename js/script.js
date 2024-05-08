@@ -7,7 +7,7 @@ canvas.height = 2000 * canvas.clientHeight / canvas.clientWidth;
 
 //region CONSTANTS
 GROUND_FRICTION = 0.4;
-GRAVITY = 0.3;
+GRAVITY = 0.16;
 //endregion
 
 //region VARIABLES
@@ -34,16 +34,21 @@ let player = {
 
     WIDTH: 100,
     HEIGHT: 100,
-    FORCE: 10,
+    FORCE: 11,
     MAX_ANGLE: 50,
     LOADING_TIME: 100,
     HIT_TIME: 15,
     LOADING_DISTANCE: 50
 };
 
+// camera
 let camera = {
-    y: -canvas.height + player.HEIGHT / 2
+    y: -canvas.height
 }
+
+// level
+let level = {};
+
 //endregion
 
 //region FUNCTIONS
@@ -74,9 +79,11 @@ function jump() {
 }
 //endregion
 
+fetch('js/level.json')
+  .then((response) => response.json())
+  .then((json) => level = json).then(() =>
 setInterval(() => {
     //region PHYSICS
-
     // stick angle
     let dirX = mouse.x - player.x;
     let dirY = mouse.y - (player.y - camera.y);
@@ -140,24 +147,30 @@ setInterval(() => {
     //region DRAW
     // clear
     canvas.height = 2000 * canvas.clientHeight / canvas.clientWidth;
-    camera.y = -canvas.height + player.HEIGHT / 2;
+    camera.y = -canvas.height;
+
+    // walls
+    ctx.fillStyle = "black"
+    for (let wall of level.walls[0]) {
+        ctx.fillRect(wall.x1, -camera.y - wall.y1, wall.x2 - wall.x1, wall.y1 - wall.y2);
+    }
 
     // player
     ctx.fillStyle = "red";
-    ctx.fillRect(player.x - player.WIDTH / 2, player.y - player.HEIGHT / 2 - camera.y, player.WIDTH, player.HEIGHT);
+    ctx.fillRect(player.x - player.WIDTH / 2, player.y - player.HEIGHT - camera.y, player.WIDTH, player.HEIGHT);
 
     // stick
     ctx.fillStyle = "blue";
     let offsetX = Math.sin(player.stick.angle * (Math.PI/180)) * player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME;
     let offsetY = Math.cos(player.stick.angle * (Math.PI/180)) * player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME;
-    ctx.translate(player.x + offsetX, player.y - camera.y - offsetY);
+    ctx.translate(player.x + offsetX, player.y - camera.y - offsetY - player.HEIGHT / 2);
     ctx.rotate(player.stick.angle * (Math.PI/180));
     ctx.fillRect(-10, -50, 20, 100);
     ctx.rotate(-player.stick.angle * (Math.PI/180));
-    ctx.translate(-player.x + offsetX, -player.y - camera.y - offsetY);
+    ctx.translate(-player.x + offsetX, -player.y - camera.y - offsetY - player.HEIGHT / 2);
 
     //endregion
-}, 0);
+}, 0));
 
 document.addEventListener("mousemove", (e) => {
     mouse.x = e.clientX / canvas.clientWidth * canvas.width;
