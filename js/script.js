@@ -67,10 +67,28 @@ function groundDistance() {
 
 function wallDistance() {
     if (player.velocityX > 0) {
-        return 2000 - player.x - player.WIDTH / 2;
+        let distance = 2000 - player.x - player.WIDTH / 2;
+        let playerTop = player.y - player.HEIGHT;
+        let playerRight = player.x + player.WIDTH / 2;
+        for (let wall of level.walls[0]) {
+            if (wall.x1 >= playerRight && wall.y1 > -player.y && wall.y2 < -playerTop) {
+                let wallDistance = wall.x2 - playerRight;
+                distance = Math.min(wallDistance, distance);
+            }
+        }
+        return distance;
     }
     if (player.velocityX < 0) {
-        return player.x - player.WIDTH / 2;
+        let distance = player.x - player.WIDTH / 2;
+        let playerTop = player.y - player.HEIGHT;
+        let playerLeft = player.x - player.WIDTH / 2;
+        for (let wall of level.walls[0]) {
+            if (wall.x2 <= playerLeft && wall.y1 > -player.y && wall.y2 < -playerTop) {
+                let wallDistance = playerLeft - wall.x2;
+                distance = Math.min(wallDistance, distance);
+            }
+        }
+        return distance;
     }
     return 0;
 }
