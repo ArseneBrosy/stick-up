@@ -67,12 +67,13 @@ function groundDistance() {
 
 function wallDistance() {
     if (player.velocityX > 0) {
+        //TODO: regler ca
         let distance = 2000 - player.x - player.WIDTH / 2;
         let playerTop = player.y - player.HEIGHT;
         let playerRight = player.x + player.WIDTH / 2;
         for (let wall of level.walls[0]) {
             if (wall.x1 >= playerRight && wall.y1 > -player.y && wall.y2 < -playerTop) {
-                let wallDistance = wall.x2 - playerRight;
+                let wallDistance = wall.x1 - playerRight;
                 distance = Math.min(wallDistance, distance);
             }
         }
