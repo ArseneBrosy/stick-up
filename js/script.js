@@ -9,6 +9,7 @@ canvas.height = 2000 * canvas.clientHeight / canvas.clientWidth;
 GROUND_FRICTION = 0.4;
 GRAVITY = 0.16;
 STICK_GROUNDED_DISTANCE = 40;
+COMPUTED_REGION_HEIGHT = 500;
 //endregion
 
 //region VARIABLES
@@ -54,6 +55,9 @@ let camera = {
 
 // level
 let level = {};
+let computedWalls = [];
+let computedRegionBottom = 0;
+let computedRegionTop = COMPUTED_REGION_HEIGHT;
 
 // deltatime
 let fpsCounter = 0;
@@ -65,7 +69,7 @@ function groundDistance() {
     let distance = -player.y;
     let playerLeft = player.x - player.WIDTH / 2;
     let playerRight = player.x + player.WIDTH / 2;
-    for (let wall of level.walls[0]) {
+    for (let wall of computedWalls) {
         if (wall.y1 <= -player.y + 20 && wall.x1 < playerRight && wall.x2 > playerLeft) {
             let groundDistance = -player.y - wall.y1;
             distance = Math.min(groundDistance, distance);
@@ -78,7 +82,7 @@ function ceilingDistance() {
     let distance = Infinity;
     let playerLeft = player.x - player.WIDTH / 2;
     let playerRight = player.x + player.WIDTH / 2;
-    for (let wall of level.walls[0]) {
+    for (let wall of computedWalls) {
         if (wall.y2 >= -player.y + player.HEIGHT - 20 && wall.x1 < playerRight && wall.x2 > playerLeft) {
             let ceilingDistance = wall.y2 + player.y - player.HEIGHT;
             distance = Math.min(ceilingDistance, distance);
@@ -93,7 +97,7 @@ function stickGrounded() {
     let stickEndX = stickPosX - Math.sin(player.stick.angle * (Math.PI/180)) * player.stick.HEIGHT / 2;
     let stickEndY = stickPosY + Math.cos(player.stick.angle * (Math.PI/180)) * player.stick.HEIGHT / 2;
     let distance = -stickEndY;
-    for (let wall of level.walls[0]) {
+    for (let wall of computedWalls) {
         if (wall.y1 <= -stickEndY + 20 && wall.x1 < stickEndX + player.stick.WIDTH * 0.8 && wall.x2 > stickEndX - player.stick.WIDTH * 0.8) {
             let groundDistance = -stickEndY - wall.y1;
             distance = Math.min(groundDistance, distance);
@@ -107,7 +111,7 @@ function wallDistance() {
         let distance = 2000 - player.x - player.WIDTH / 2;
         let playerTop = player.y - player.HEIGHT;
         let playerRight = player.x + player.WIDTH / 2;
-        for (let wall of level.walls[0]) {
+        for (let wall of computedWalls) {
             if (wall.x1 >= playerRight && wall.y1 > -player.y && wall.y2 < -playerTop) {
                 let wallDistance = wall.x1 - playerRight;
                 distance = Math.min(wallDistance, distance);
@@ -119,7 +123,7 @@ function wallDistance() {
         let distance = player.x - player.WIDTH / 2;
         let playerTop = player.y - player.HEIGHT;
         let playerLeft = player.x - player.WIDTH / 2;
-        for (let wall of level.walls[0]) {
+        for (let wall of computedWalls) {
             if (wall.x2 <= playerLeft && wall.y1 > -player.y && wall.y2 < -playerTop) {
                 let wallDistance = playerLeft - wall.x2;
                 distance = Math.min(wallDistance, distance);
@@ -141,12 +145,34 @@ function jump() {
     player.velocityY = -forceY;
     player.grounded = false;
 }
+
+function refreshComputedRegion() {
+    computedWalls = [];
+    for (let wall of level.walls) {
+        if (wall.y2 <= computedRegionTop + COMPUTED_REGION_HEIGHT && wall.y1 >= computedRegionBottom - COMPUTED_REGION_HEIGHT) {
+            computedWalls.push(wall);
+        }
+    }
+}
 //endregion
 
 fetch('js/level.json')
   .then((response) => response.json())
-  .then((json) => level = json).then(() =>
+  .then((json) => level = json).then(() => {
 setInterval(() => {
+    //region COMPUTED WALLS
+    if (-player.y < computedRegionBottom) {
+        computedRegionBottom -= COMPUTED_REGION_HEIGHT;
+        computedRegionTop -= COMPUTED_REGION_HEIGHT;
+        refreshComputedRegion();
+    }
+    if (-player.y > computedRegionTop) {
+        computedRegionBottom += COMPUTED_REGION_HEIGHT;
+        computedRegionTop += COMPUTED_REGION_HEIGHT;
+        refreshComputedRegion();
+    }
+    //endregion
+
     //region PHYSICS
     // deltatime
     fpsCounter++;
@@ -155,7 +181,7 @@ setInterval(() => {
     let dirX = mouse.x - player.x;
     let dirY = mouse.y - (player.y - camera.y);
 
-    let angle = Math.atan(dirY/dirX)*(180/Math.PI);
+    let angle = Math.atan(dirY / dirX) * (180 / Math.PI);
     angle += 90;
     if (dirX < 0) {
         angle -= 180;
@@ -226,7 +252,7 @@ setInterval(() => {
 
     // walls
     ctx.fillStyle = "black"
-    for (let wall of level.walls[0]) {
+    for (let wall of computedWalls) {
         ctx.fillRect(wall.x1, -camera.y - wall.y1, wall.x2 - wall.x1, wall.y1 - wall.y2);
     }
 
@@ -236,16 +262,26 @@ setInterval(() => {
 
     // stick
     ctx.fillStyle = "blue";
-    player.stick.offsetX = Math.sin(player.stick.angle * (Math.PI/180)) * player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME;
-    player.stick.offsetY = Math.cos(player.stick.angle * (Math.PI/180)) * player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME;
+    player.stick.offsetX = Math.sin(player.stick.angle * (Math.PI / 180)) * player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME;
+    player.stick.offsetY = Math.cos(player.stick.angle * (Math.PI / 180)) * player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME;
     ctx.translate(player.x + player.stick.offsetX, player.y - camera.y - player.stick.offsetY - player.HEIGHT / 2);
-    ctx.rotate(player.stick.angle * (Math.PI/180));
+    ctx.rotate(player.stick.angle * (Math.PI / 180));
     ctx.fillRect(-player.stick.WIDTH / 2, -player.stick.HEIGHT / 2, player.stick.WIDTH, player.stick.HEIGHT);
-    ctx.rotate(-player.stick.angle * (Math.PI/180));
+    ctx.rotate(-player.stick.angle * (Math.PI / 180));
     ctx.translate(-(player.x + player.stick.offsetX), -(player.y - camera.y - player.stick.offsetY - player.HEIGHT / 2));
 
+    /*// computed region
+    ctx.fillStyle = "green";
+    ctx.fillRect(0, -camera.y - computedRegionTop, canvas.width, 2);
+    ctx.fillRect(0, -camera.y - computedRegionBottom, canvas.width, 2);
+    ctx.fillStyle = "blue";
+    ctx.fillRect(0, -camera.y - (computedRegionTop + COMPUTED_REGION_HEIGHT), canvas.width, 2);
+    ctx.fillRect(0, -camera.y - (computedRegionBottom - COMPUTED_REGION_HEIGHT), canvas.width, 2);*/
+
     //endregion
-}, 0));
+}, 0);
+refreshComputedRegion();
+});
 
 setInterval(() => {
     deltatime = 25 / fpsCounter;
