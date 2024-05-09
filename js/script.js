@@ -248,9 +248,7 @@ setInterval(() => {
 }, 0));
 
 setInterval(() => {
-    fpsCounter *= 10;
-    deltatime = 250 / fpsCounter;
-    document.querySelector("#deltatime").innerText = deltatime;
+    deltatime = 25 / fpsCounter;
     fpsCounter = 0;
 }, 100);
 
