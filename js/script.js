@@ -8,7 +8,7 @@ canvas.height = 2000 * canvas.clientHeight / canvas.clientWidth;
 //region CONSTANTS
 GROUND_FRICTION = 0.4;
 GRAVITY = 0.16;
-STICK_GROUNDED_DISTANCE = 20;
+STICK_GROUNDED_DISTANCE = 40;
 //endregion
 
 //region VARIABLES
@@ -55,6 +55,9 @@ let camera = {
 // level
 let level = {};
 
+// deltatime
+let fpsCounter = 0;
+let deltatime = 1;
 //endregion
 
 //region FUNCTIONS
@@ -63,7 +66,7 @@ function groundDistance() {
     let playerLeft = player.x - player.WIDTH / 2;
     let playerRight = player.x + player.WIDTH / 2;
     for (let wall of level.walls[0]) {
-        if (wall.y1 <= -player.y + 5 && wall.x1 < playerRight && wall.x2 > playerLeft) {
+        if (wall.y1 <= -player.y + 20 && wall.x1 < playerRight && wall.x2 > playerLeft) {
             let groundDistance = -player.y - wall.y1;
             distance = Math.min(groundDistance, distance);
         }
@@ -76,7 +79,7 @@ function ceilingDistance() {
     let playerLeft = player.x - player.WIDTH / 2;
     let playerRight = player.x + player.WIDTH / 2;
     for (let wall of level.walls[0]) {
-        if (wall.y2 >= -player.y + player.HEIGHT - 5 && wall.x1 < playerRight && wall.x2 > playerLeft) {
+        if (wall.y2 >= -player.y + player.HEIGHT - 20 && wall.x1 < playerRight && wall.x2 > playerLeft) {
             let ceilingDistance = wall.y2 + player.y - player.HEIGHT;
             distance = Math.min(ceilingDistance, distance);
         }
@@ -91,7 +94,7 @@ function stickGrounded() {
     let stickEndY = stickPosY + Math.cos(player.stick.angle * (Math.PI/180)) * player.stick.HEIGHT / 2;
     let distance = -stickEndY;
     for (let wall of level.walls[0]) {
-        if (wall.y1 <= -stickEndY + 5 && wall.x1 < stickEndX + player.stick.WIDTH * 0.8 && wall.x2 > stickEndX - player.stick.WIDTH * 0.8) {
+        if (wall.y1 <= -stickEndY + 20 && wall.x1 < stickEndX + player.stick.WIDTH * 0.8 && wall.x2 > stickEndX - player.stick.WIDTH * 0.8) {
             let groundDistance = -stickEndY - wall.y1;
             distance = Math.min(groundDistance, distance);
         }
@@ -145,6 +148,9 @@ fetch('js/level.json')
   .then((json) => level = json).then(() =>
 setInterval(() => {
     //region PHYSICS
+    // deltatime
+    fpsCounter++;
+
     // stick angle
     let dirX = mouse.x - player.x;
     let dirY = mouse.y - (player.y - camera.y);
@@ -163,9 +169,9 @@ setInterval(() => {
 
     // stick loading
     if (player.stick.loading) {
-        player.stick.loadingState ++;
+        player.stick.loadingState += deltatime;
     } else {
-        player.stick.loadingState -= player.LOADING_TIME / player.HIT_TIME;
+        player.stick.loadingState -= player.LOADING_TIME / player.HIT_TIME * deltatime;
     }
     player.stick.loadingState = Math.min(Math.max(player.stick.loadingState, 0), player.LOADING_TIME);
 
@@ -178,34 +184,38 @@ setInterval(() => {
     // gravity
     const groundDis = groundDistance();
     const ceilingDis = ceilingDistance();
-    if (player.velocityY > groundDis) {
+    if (player.velocityY * deltatime > groundDis) {
         player.grounded = true;
         player.y += groundDis;
         player.velocityY = 0;
-    } else if (-player.velocityY > ceilingDis) {
+    } else if (-player.velocityY * deltatime > ceilingDis) {
         player.y -= ceilingDis;
         player.velocityY = 0;
-    } else {
-        player.velocityY += GRAVITY;
-        player.y += player.velocityY;
+    } else if (!player.grounded) {
+        player.velocityY += GRAVITY * deltatime;
+        player.y += player.velocityY * deltatime;
     }
 
     // friction
     if (player.grounded) {
-        if (Math.abs(player.velocityX) < GROUND_FRICTION) {
+        if (Math.abs(player.velocityX * deltatime) < GROUND_FRICTION) {
             player.velocityX = 0;
         } else {
-            player.velocityX -= player.velocityX > 0 ? GROUND_FRICTION : -GROUND_FRICTION;
+            let direction = player.velocityX < 0;
+            player.velocityX -= (player.velocityX > 0 ? GROUND_FRICTION : -GROUND_FRICTION) * deltatime;
+            if (player.velocityX < 0 !== direction) {
+                player.velocityX = 0;
+            }
         }
     }
 
     // velocity X
     const wallDis = wallDistance();
-    if (Math.abs(player.velocityX) > wallDis) {
+    if (Math.abs(player.velocityX * deltatime) > wallDis) {
         player.x += player.velocityX > 0 ? wallDis : -wallDis;
         player.velocityX *= -1;
     } else {
-        player.x += player.velocityX;
+        player.x += player.velocityX * deltatime;
     }
     //endregion
 
@@ -236,6 +246,13 @@ setInterval(() => {
 
     //endregion
 }, 0));
+
+setInterval(() => {
+    fpsCounter *= 10;
+    deltatime = 250 / fpsCounter;
+    document.querySelector("#deltatime").innerText = deltatime;
+    fpsCounter = 0;
+}, 100);
 
 document.addEventListener("mousemove", (e) => {
     mouse.x = e.clientX / canvas.clientWidth * canvas.width;
