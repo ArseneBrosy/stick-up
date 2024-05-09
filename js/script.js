@@ -71,6 +71,19 @@ function groundDistance() {
     return distance;
 }
 
+function ceilingDistance() {
+    let distance = Infinity;
+    let playerLeft = player.x - player.WIDTH / 2;
+    let playerRight = player.x + player.WIDTH / 2;
+    for (let wall of level.walls[0]) {
+        if (wall.y2 >= -player.y + player.HEIGHT - 5 && wall.x1 < playerRight && wall.x2 > playerLeft) {
+            let ceilingDistance = wall.y2 + player.y - player.HEIGHT;
+            distance = Math.min(ceilingDistance, distance);
+        }
+    }
+    return distance;
+}
+
 function stickGrounded() {
     let stickPosX = player.x + player.stick.offsetX;
     let stickPosY = player.y - player.stick.offsetY - player.HEIGHT / 2;
@@ -164,9 +177,13 @@ setInterval(() => {
 
     // gravity
     const groundDis = groundDistance();
+    const ceilingDis = ceilingDistance();
     if (player.velocityY > groundDis) {
         player.grounded = true;
         player.y += groundDis;
+        player.velocityY = 0;
+    } else if (-player.velocityY > ceilingDis) {
+        player.y -= ceilingDis;
         player.velocityY = 0;
     } else {
         player.velocityY += GRAVITY;
