@@ -8,6 +8,7 @@ canvas.height = 2000 * canvas.clientHeight / canvas.clientWidth;
 //region CONSTANTS
 GROUND_FRICTION = 0.4;
 GRAVITY = 0.16;
+STICK_GROUNDED_DISTANCE = 20;
 //endregion
 
 //region VARIABLES
@@ -28,8 +29,13 @@ let player = {
     nextJumpForce: 0,
     stick: {
         angle: 0,
+        offsetX: 0,
+        offsetY: 0,
         loadingState: 0,
-        loading: false
+        loading: false,
+
+        HEIGHT: 100,
+        WIDTH: 20
     },
 
     WIDTH: 100,
@@ -62,12 +68,26 @@ function groundDistance() {
             distance = Math.min(groundDistance, distance);
         }
     }
-    return distance
+    return distance;
+}
+
+function stickGrounded() {
+    let stickPosX = player.x + player.stick.offsetX;
+    let stickPosY = player.y - player.stick.offsetY - player.HEIGHT / 2;
+    let stickEndX = stickPosX - Math.sin(player.stick.angle * (Math.PI/180)) * player.stick.HEIGHT / 2;
+    let stickEndY = stickPosY + Math.cos(player.stick.angle * (Math.PI/180)) * player.stick.HEIGHT / 2;
+    let distance = -stickEndY;
+    for (let wall of level.walls[0]) {
+        if (wall.y1 <= -stickEndY + 5 && wall.x1 < stickEndX + player.stick.WIDTH * 0.8 && wall.x2 > stickEndX - player.stick.WIDTH * 0.8) {
+            let groundDistance = -stickEndY - wall.y1;
+            distance = Math.min(groundDistance, distance);
+        }
+    }
+    return distance <= STICK_GROUNDED_DISTANCE;
 }
 
 function wallDistance() {
     if (player.velocityX > 0) {
-        //TODO: regler ca
         let distance = 2000 - player.x - player.WIDTH / 2;
         let playerTop = player.y - player.HEIGHT;
         let playerRight = player.x + player.WIDTH / 2;
@@ -96,7 +116,7 @@ function wallDistance() {
 
 function jump() {
     player.stick.loading = false;
-    if (!player.grounded) {
+    if (!player.grounded || !stickGrounded()) {
         return;
     }
     let forceX = Math.sin(player.stick.angle * (Math.PI/180)) * player.nextJumpForce;
@@ -189,13 +209,13 @@ setInterval(() => {
 
     // stick
     ctx.fillStyle = "blue";
-    let offsetX = Math.sin(player.stick.angle * (Math.PI/180)) * player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME;
-    let offsetY = Math.cos(player.stick.angle * (Math.PI/180)) * player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME;
-    ctx.translate(player.x + offsetX, player.y - camera.y - offsetY - player.HEIGHT / 2);
+    player.stick.offsetX = Math.sin(player.stick.angle * (Math.PI/180)) * player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME;
+    player.stick.offsetY = Math.cos(player.stick.angle * (Math.PI/180)) * player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME;
+    ctx.translate(player.x + player.stick.offsetX, player.y - camera.y - player.stick.offsetY - player.HEIGHT / 2);
     ctx.rotate(player.stick.angle * (Math.PI/180));
-    ctx.fillRect(-10, -50, 20, 100);
+    ctx.fillRect(-player.stick.WIDTH / 2, -player.stick.HEIGHT / 2, player.stick.WIDTH, player.stick.HEIGHT);
     ctx.rotate(-player.stick.angle * (Math.PI/180));
-    ctx.translate(-player.x + offsetX, -player.y - camera.y - offsetY - player.HEIGHT / 2);
+    ctx.translate(-(player.x + player.stick.offsetX), -(player.y - camera.y - player.stick.offsetY - player.HEIGHT / 2));
 
     //endregion
 }, 0));
