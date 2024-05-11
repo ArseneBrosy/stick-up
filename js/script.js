@@ -54,7 +54,10 @@ let player = {
 // camera
 let camera = {
     y: -canvas.height
-}
+};
+
+// particles
+let particles = [];
 
 // level
 let level = {};
@@ -68,13 +71,13 @@ let deltatime = 1;
 //endregion
 
 //region FUNCTIONS
-function groundDistance() {
-    let distance = -player.y;
-    let playerLeft = player.x - player.WIDTH / 2;
-    let playerRight = player.x + player.WIDTH / 2;
+function groundDistance(x = player.x, y = player.y, margin = player.WIDTH / 2) {
+    let distance = -y;
+    let playerLeft = x - margin;
+    let playerRight = x + margin;
     for (let wall of computedWalls) {
-        if (wall.y1 <= -player.y + 20 && wall.x1 < playerRight && wall.x2 > playerLeft) {
-            let groundDistance = -player.y - wall.y1;
+        if (wall.y1 <= -y + 20 && wall.x1 < playerRight && wall.x2 > playerLeft) {
+            let groundDistance = -y - wall.y1;
             distance = Math.min(groundDistance, distance);
         }
     }
@@ -157,6 +160,21 @@ function refreshComputedRegion() {
         }
     }
 }
+
+function spawnParticles(number = 7, randomVelocityX = 2.5, randomVelocityY = 3, randomSize = [5, 15], randomLifespan = [50, 200]) {
+    for (let i = 0; i < number; i++) {
+        particles.push({
+            x: player.x,
+            y: player.y - 10,
+            velocityX: Math.random() * randomVelocityX * 2 - randomVelocityX,
+            velocityY: -Math.random() * randomVelocityY,
+            color: "black",
+            size: Math.random() * (randomSize[1] - randomSize[0]) + randomSize[0],
+            ttl: Math.random() * (randomLifespan[1] - randomLifespan[0]) + randomLifespan[0],
+            lifespan: Math.random() * (randomLifespan[1] - randomLifespan[0]) + randomLifespan[0]
+        });
+    }
+}
 //endregion
 
 fetch('js/level.json')
@@ -234,6 +252,7 @@ setInterval(() => {
         player.grounded = true;
         player.y += groundDis;
         player.velocityY = 0;
+        spawnParticles();
     } else if (-player.velocityY * deltatime > ceilingDis) {
         player.y -= ceilingDis;
         player.velocityY = 0;
@@ -263,6 +282,34 @@ setInterval(() => {
     } else {
         player.x += player.velocityX * deltatime;
     }
+
+    for (let particle of particles) {
+        // gravity
+        const groundDis = groundDistance(particle.x, particle.y, particle.size / 2);
+        if (particle.velocityY * deltatime > groundDis) {
+            particle.y += groundDis;
+            particle.velocityY = 0;
+        }  else if (particle.velocityY !== 0) {
+            particle.velocityY += GRAVITY * deltatime;
+            particle.y += particle.velocityY * deltatime;
+        }
+
+        // friction
+        if (particle.velocityY === 0) {
+            if (Math.abs(particle.velocityX * deltatime) < GROUND_FRICTION) {
+                particle.velocityX = 0;
+            } else {
+                let direction = particle.velocityX < 0;
+                particle.velocityX -= (particle.velocityX > 0 ? GROUND_FRICTION : -GROUND_FRICTION) * deltatime;
+                if (particle.velocityX < 0 !== direction) {
+                    particle.velocityX = 0;
+                }
+            }
+        }
+
+        // velocity X
+        particle.x += particle.velocityX * deltatime;
+    }
     //endregion
 
     //region DRAW
@@ -288,6 +335,17 @@ setInterval(() => {
     ctx.fillRect(-player.stick.WIDTH / 2, -player.stick.HEIGHT / 2, player.stick.WIDTH, player.stick.HEIGHT);
     ctx.rotate(-player.stick.angle * (Math.PI / 180));
     ctx.translate(-(player.x + player.stick.offsetX), -(player.y - camera.y - player.stick.offsetY - player.HEIGHT / 2));
+
+    // particles
+    for (let particle of particles) {
+        ctx.fillStyle = particle.color;
+        const particleSize = particle.size * particle.ttl / particle.lifespan;
+        ctx.fillRect(particle.x - particleSize / 2, particle.y - camera.y - particleSize / 2, particleSize, particleSize);
+        particle.ttl -= deltatime;
+        if (particle.ttl <= 0) {
+            particles.splice(particles.indexOf(particle), 1);
+        }
+    }
 
     /*// computed region
     ctx.fillStyle = "green";
