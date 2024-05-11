@@ -6,10 +6,13 @@ canvas.width = 2000;
 canvas.height = 2000 * canvas.clientHeight / canvas.clientWidth;
 
 //region CONSTANTS
-GROUND_FRICTION = 0.4;
-GRAVITY = 0.16;
-STICK_GROUNDED_DISTANCE = 40;
-COMPUTED_REGION_HEIGHT = 500;
+const GROUND_FRICTION = 0.4;
+const GRAVITY = 0.16;
+const STICK_GROUNDED_DISTANCE = 40;
+const COMPUTED_REGION_HEIGHT = 500;
+const CAMERA_ZONE_TOP = 0.5;
+const CAMERA_ZONE_BOTTOM = 0.25;
+const CAMERA_SPEED = 6;
 //endregion
 
 //region VARIABLES
@@ -173,6 +176,23 @@ setInterval(() => {
     }
     //endregion
 
+    //region CAMERA
+    const worldCameraZoneTop = camera.y + canvas.height * (1 - CAMERA_ZONE_TOP);
+    const worldCameraZoneBottom = camera.y + canvas.height * (1 - CAMERA_ZONE_BOTTOM);
+    const worldCameraZoneHeight = worldCameraZoneTop - worldCameraZoneBottom;
+    const cameraZoneRelativePlayer = (player.y - worldCameraZoneBottom) / worldCameraZoneHeight;
+    if (player.y < worldCameraZoneTop) {
+        camera.y -= worldCameraZoneTop - player.y;
+    }
+    else if (player.y > worldCameraZoneBottom - worldCameraZoneHeight) {
+        camera.y -= (worldCameraZoneBottom - worldCameraZoneHeight) - player.y;
+    }
+    else {
+        camera.y -= cameraZoneRelativePlayer * CAMERA_SPEED * deltatime;
+    }
+    camera.y = Math.min(camera.y, -canvas.height);
+    //endregion
+
     //region PHYSICS
     // deltatime
     fpsCounter++;
@@ -248,7 +268,6 @@ setInterval(() => {
     //region DRAW
     // clear
     canvas.height = 2000 * canvas.clientHeight / canvas.clientWidth;
-    camera.y = -canvas.height;
 
     // walls
     ctx.fillStyle = "black"
@@ -277,6 +296,11 @@ setInterval(() => {
     ctx.fillStyle = "blue";
     ctx.fillRect(0, -camera.y - (computedRegionTop + COMPUTED_REGION_HEIGHT), canvas.width, 2);
     ctx.fillRect(0, -camera.y - (computedRegionBottom - COMPUTED_REGION_HEIGHT), canvas.width, 2);*/
+
+    /*// camera zone
+    ctx.fillStyle = "yellow";
+    ctx.fillRect(0, canvas.height - canvas.height * CAMERA_ZONE_TOP, canvas.width, 2);
+    ctx.fillRect(0, canvas.height - canvas.height * CAMERA_ZONE_BOTTOM, canvas.width, 2);*/
 
     //endregion
 }, 0);
