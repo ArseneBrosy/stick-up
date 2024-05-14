@@ -92,11 +92,11 @@ let player = {
     WIDTH: 100,
     HEIGHT: 121,
     FORCE: 11,
-    MAX_ANGLE: 50,
-    ANGLE_OFFSET: 10,
+    MAX_ANGLE: 42,
+    STICK_GROUND_HEIGHT: 5,
     LOADING_TIME: 100,
     HIT_TIME: 15,
-    LOADING_DISTANCE: 40,
+    LOADING_DISTANCE: 35,
     HEAD_HEIGHT: 1,
 
     S_HEAD: [],
@@ -444,10 +444,10 @@ setInterval(() => {
     ctx.drawImage(player.S_HEAD[player.head_index], player.x - headWidth / 2, player.y - headHeight / 2 - camera.y - player.HEAD_HEIGHT * player.HEIGHT, headWidth, headHeight);
 
     // stick offset
-    const stickAngleOffset = -Math.abs(player.stick.angle / player.MAX_ANGLE * player.ANGLE_OFFSET);
-    console.log(stickAngleOffset);
-    player.stick.offsetX = Math.sin(player.stick.angle * (Math.PI / 180)) * (player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME + stickAngleOffset);
-    player.stick.offsetY = Math.cos(player.stick.angle * (Math.PI / 180)) * (player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME + stickAngleOffset);
+    //const stickAngleOffset = -Math.abs(player.stick.angle / player.MAX_ANGLE * player.ANGLE_OFFSET);
+    const stickAngleOffset = -(Math.sqrt((Math.tan(player.stick.angle * (Math.PI / 180)) * player.stick.HEIGHT / 2)**2 + (player.stick.HEIGHT / 2)**2) - player.stick.HEIGHT / 2);
+    player.stick.offsetX = Math.sin(player.stick.angle * (Math.PI / 180)) * (player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME + stickAngleOffset + player.STICK_GROUND_HEIGHT);
+    player.stick.offsetY = Math.cos(player.stick.angle * (Math.PI / 180)) * (player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME + stickAngleOffset + player.STICK_GROUND_HEIGHT);
 
     //region JOINS
     // shoulders
