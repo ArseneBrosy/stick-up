@@ -40,7 +40,16 @@ let player = {
         loading: false,
 
         HEIGHT: 121,
-        WIDTH: 58
+        WIDTH: 55,
+
+        LEFT_JOIN: {
+            x: 0.6,
+            y: -0.5
+        },
+        RIGHT_JOIN: {
+            x: -0.6,
+            y: -0.3
+        },
     },
     head_index: 0,
 
@@ -52,6 +61,8 @@ let player = {
     HIT_TIME: 15,
     LOADING_DISTANCE: 50,
     HEAD_HEIGHT: 1,
+    UPPER_ARM_LENGHT: 50,
+    LOWER_ARM_LENGHT: 40,
 
     S_HEAD: [],
     S_TORSO: new Image(),
@@ -60,6 +71,15 @@ let player = {
     S_LEFT_LOWER_ARM: new Image(),
     S_RIGHT_UPPER_ARM: new Image(),
     S_RIGHT_LOWER_ARM: new Image(),
+
+    LEFT_JOIN: {
+        x: 0.9,
+        y: 0.65
+    },
+    RIGHT_JOIN: {
+        x: -0.9,
+        y: 0.65
+    },
 };
 for (let i = -6; i <= 6; i++) {
     let newHead = new Image();
@@ -195,6 +215,26 @@ function spawnParticles(number = 7, randomVelocityX = 2.5, randomVelocityY = 3, 
             ttl: Math.random() * (randomLifespan[1] - randomLifespan[0]) + randomLifespan[0],
             lifespan: Math.random() * (randomLifespan[1] - randomLifespan[0]) + randomLifespan[0]
         });
+    }
+}
+
+function circlesIntersections(x1, x2, y1, y2, r1, r2, intersection) {
+    const d = Math.sqrt((x2 - x1)**2 + (y2 - y1)**2);
+    const a = (r1**2 - r2**2 + d**2) / (2 * d);
+    const h = Math.sqrt(r1**2 - a**2);
+    const x3 = x1 + a * (x2 - x1) / d;
+    const y3 = y1 + a * (y2 - y1) / d;
+    let x, y;
+    if (intersection === 0) {
+        x = x3 + h * (y2 - y1) / d;
+        y = y3 - h * (x2 - x1) / d;
+    } else {
+        x = x3 - h * (y2 - y1) / d;
+        y = y3 + h * (x2 - x1) / d;
+    }
+    return {
+        x: x,
+        y: y,
     }
 }
 //endregion
@@ -364,6 +404,34 @@ setInterval(() => {
     ctx.drawImage(player.S_STICK, -player.stick.WIDTH / 2, -player.stick.HEIGHT / 2, player.stick.WIDTH, player.stick.HEIGHT);
     ctx.rotate(-player.stick.angle * (Math.PI / 180));
     ctx.translate(-(player.x + player.stick.offsetX), -(player.y - camera.y - player.stick.offsetY - player.HEIGHT / 2));
+
+    // joins
+    const leftShoulderX = player.x + player.WIDTH * player.LEFT_JOIN.x - player.WIDTH / 2;
+    const leftShoulderY = player.y - player.HEIGHT * player.LEFT_JOIN.y;
+    const rightShoulderX = player.x + player.WIDTH * player.RIGHT_JOIN.x + player.WIDTH / 2;
+    const rightShoulderY = player.y - player.HEIGHT * player.RIGHT_JOIN.y;
+    ctx.fillStyle = "red";
+    ctx.fillRect(leftShoulderX - 5, leftShoulderY - camera.y - 5, 10, 10);
+    ctx.fillStyle = "green";
+    ctx.fillRect(rightShoulderX - 5, rightShoulderY - camera.y - 5, 10, 10);
+
+    const stickPosX = player.x + player.stick.offsetX;
+    const stickPosY = player.y - player.stick.offsetY - player.HEIGHT / 2;
+    const leftHandX = stickPosX - Math.sin(player.stick.angle * (Math.PI/180)) * -player.stick.HEIGHT * player.stick.LEFT_JOIN.y / 2 + Math.cos(player.stick.angle * (Math.PI/180)) * player.stick.WIDTH * player.LEFT_JOIN.x / 2;
+    const leftHandY = stickPosY + Math.cos(player.stick.angle * (Math.PI/180)) * -player.stick.HEIGHT * player.stick.LEFT_JOIN.y / 2 + Math.sin(player.stick.angle * (Math.PI/180)) * player.stick.WIDTH * player.LEFT_JOIN.x / 2;
+    const rightHandX = stickPosX - Math.sin(player.stick.angle * (Math.PI/180)) * -player.stick.HEIGHT * player.stick.RIGHT_JOIN.y / 2 + Math.cos(player.stick.angle * (Math.PI/180)) * player.stick.WIDTH * player.RIGHT_JOIN.x / 2;
+    const rightHandY = stickPosY + Math.cos(player.stick.angle * (Math.PI/180)) * -player.stick.HEIGHT * player.stick.RIGHT_JOIN.y / 2 + Math.sin(player.stick.angle * (Math.PI/180)) * player.stick.WIDTH * player.RIGHT_JOIN.x / 2;
+    ctx.fillStyle = "red";
+    ctx.fillRect(leftHandX - 5, leftHandY - camera.y - 5, 10, 10);
+    ctx.fillStyle = "green";
+    ctx.fillRect(rightHandX - 5, rightHandY - camera.y - 5, 10, 10);
+
+    const leftElbow = circlesIntersections(leftShoulderX, leftHandX, leftShoulderY, leftHandY, player.UPPER_ARM_LENGHT, player.LOWER_ARM_LENGHT, 0);
+    const rightElbow = circlesIntersections(rightShoulderX, rightHandX, rightShoulderY, rightHandY, player.UPPER_ARM_LENGHT, player.LOWER_ARM_LENGHT, 1);
+    ctx.fillStyle = "red";
+    ctx.fillRect(leftElbow.x - 5, leftElbow.y - camera.y - 5, 10, 10);
+    ctx.fillStyle = "green";
+    ctx.fillRect(rightElbow.x - 5, rightElbow.y - camera.y - 5, 10, 10);
 
     if (DEBUG) {
         // hitbox
