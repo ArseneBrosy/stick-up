@@ -2,8 +2,6 @@
 // by Arsène Brosy
 let canvas = document.getElementById("game");
 let ctx = canvas.getContext("2d");
-canvas.width = 2000;
-canvas.height = 2000 * canvas.clientHeight / canvas.clientWidth;
 
 //region CONSTANTS
 const DEBUG = false;
@@ -14,6 +12,8 @@ const COMPUTED_REGION_HEIGHT = 500;
 const CAMERA_ZONE_TOP = 0.5;
 const CAMERA_ZONE_BOTTOM = 0.25;
 const CAMERA_SPEED = 6;
+const VIEW_WIDTH = 2000;
+const STICK_GROUNDED_WIDTH = 10;
 //endregion
 
 //region VARIABLES
@@ -30,6 +30,7 @@ let player = {
     velocityX: 0,
     velocityY: 0,
     grounded: true,
+    wasGrounded: false,
     willJump: false,
     nextJumpForce: 0,
     stick: {
@@ -89,8 +90,10 @@ let player = {
         CENTER_OFFSET_Y: 0
     },
 
-    WIDTH: 100,
-    HEIGHT: 121,
+    WIDTH: 65,
+    HEIGHT: 145,
+    S_WIDTH: 100,
+    S_HEIGHT: 121,
     FORCE: 11,
     MAX_ANGLE: 42,
     STICK_GROUND_HEIGHT: 5,
@@ -140,6 +143,8 @@ player.upper_arm.CENTER_OFFSET_Y = -(player.upper_arm.TOP_JOIN.y + player.upper_
 player.lower_arm.CENTER_OFFSET_X = (player.lower_arm.TOP_JOIN.x + player.lower_arm.BOTTOM_JOIN.x) * player.lower_arm.WIDTH / 4;
 player.lower_arm.CENTER_OFFSET_Y = -(player.lower_arm.TOP_JOIN.y + player.lower_arm.BOTTOM_JOIN.y) * player.lower_arm.HEIGHT / 4;
 
+canvas.width = VIEW_WIDTH;
+
 // camera
 let camera = {
     y: -canvas.height
@@ -188,12 +193,12 @@ function ceilingDistance() {
 
 function stickGrounded() {
     let stickPosX = player.x + player.stick.offsetX;
-    let stickPosY = player.y - player.stick.offsetY - player.HEIGHT / 2;
+    let stickPosY = player.y - player.stick.offsetY - player.S_HEIGHT / 2;
     let stickEndX = stickPosX - Math.sin(player.stick.angle * (Math.PI/180)) * player.stick.HEIGHT / 2;
     let stickEndY = stickPosY + Math.cos(player.stick.angle * (Math.PI/180)) * player.stick.HEIGHT / 2;
     let distance = -stickEndY;
     for (let wall of computedWalls) {
-        if (wall.y1 <= -stickEndY + 20 && wall.x1 < stickEndX + player.stick.WIDTH * 0.8 && wall.x2 > stickEndX - player.stick.WIDTH * 0.8) {
+        if (wall.y1 <= -stickEndY + 20 && wall.x1 < stickEndX + STICK_GROUNDED_WIDTH && wall.x2 > stickEndX - STICK_GROUNDED_WIDTH) {
             let groundDistance = -stickEndY - wall.y1;
             distance = Math.min(groundDistance, distance);
         }
@@ -203,7 +208,7 @@ function stickGrounded() {
 
 function wallDistance() {
     if (player.velocityX > 0) {
-        let distance = 2000 - player.x - player.WIDTH / 2;
+        let distance = VIEW_WIDTH - player.x - player.WIDTH / 2;
         let playerTop = player.y - player.HEIGHT;
         let playerRight = player.x + player.WIDTH / 2;
         for (let wall of computedWalls) {
@@ -289,7 +294,7 @@ function circlesIntersections(x1, x2, y1, y2, r1, r2, intersection) {
 fetch('js/level.json')
   .then((response) => response.json())
   .then((json) => level = json).then(() => {
-const headWidth = player.S_HEAD[0].width * player.WIDTH / player.S_TORSO.width;
+const headWidth = player.S_HEAD[0].width * player.S_WIDTH / player.S_TORSO.width;
 const headHeight = player.S_HEAD[0].height * headWidth / player.S_HEAD[0].width;
 setInterval(() => {
     //region COMPUTED WALLS
@@ -366,14 +371,17 @@ setInterval(() => {
         player.grounded = true;
         player.y += groundDis;
         player.velocityY = 0;
-        spawnParticles();
+        if (!player.wasGrounded) {
+            spawnParticles();
+        }
     } else if (-player.velocityY * deltatime > ceilingDis) {
         player.y -= ceilingDis;
         player.velocityY = 0;
-    } else if (!player.grounded) {
+    } else {
         player.velocityY += GRAVITY * deltatime;
         player.y += player.velocityY * deltatime;
     }
+    player.wasGrounded = player.grounded;
 
     // friction
     if (player.grounded) {
@@ -428,7 +436,7 @@ setInterval(() => {
 
     //region DRAW
     // clear
-    canvas.height = 2000 * canvas.clientHeight / canvas.clientWidth;
+    canvas.height = VIEW_WIDTH * canvas.clientHeight / canvas.clientWidth;
 
     // walls
     ctx.fillStyle = "black"
@@ -438,10 +446,10 @@ setInterval(() => {
 
     //region PLAYER
     // torso
-    ctx.drawImage(player.S_TORSO, player.x - player.WIDTH / 2, player.y - player.HEIGHT - camera.y, player.WIDTH, player.HEIGHT);
+    ctx.drawImage(player.S_TORSO, player.x - player.S_WIDTH / 2, player.y - player.S_HEIGHT - camera.y, player.S_WIDTH, player.S_HEIGHT);
 
     // head
-    ctx.drawImage(player.S_HEAD[player.head_index], player.x - headWidth / 2, player.y - headHeight / 2 - camera.y - player.HEAD_HEIGHT * player.HEIGHT, headWidth, headHeight);
+    ctx.drawImage(player.S_HEAD[player.head_index], player.x - headWidth / 2, player.y - headHeight / 2 - camera.y - player.HEAD_HEIGHT * player.S_HEIGHT, headWidth, headHeight);
 
     // stick offset
     //const stickAngleOffset = -Math.abs(player.stick.angle / player.MAX_ANGLE * player.ANGLE_OFFSET);
@@ -451,14 +459,14 @@ setInterval(() => {
 
     //region JOINS
     // shoulders
-    const leftShoulderX = player.x + player.WIDTH * player.LEFT_JOIN.x - player.WIDTH / 2;
-    const leftShoulderY = player.y - player.HEIGHT * player.LEFT_JOIN.y;
-    const rightShoulderX = player.x + player.WIDTH * player.RIGHT_JOIN.x + player.WIDTH / 2;
-    const rightShoulderY = player.y - player.HEIGHT * player.RIGHT_JOIN.y;
+    const leftShoulderX = player.x + player.S_WIDTH * player.LEFT_JOIN.x - player.S_WIDTH / 2;
+    const leftShoulderY = player.y - player.S_HEIGHT * player.LEFT_JOIN.y;
+    const rightShoulderX = player.x + player.S_WIDTH * player.RIGHT_JOIN.x + player.S_WIDTH / 2;
+    const rightShoulderY = player.y - player.S_HEIGHT * player.RIGHT_JOIN.y;
 
     // hands
     const stickPosX = player.x + player.stick.offsetX;
-    const stickPosY = player.y - player.stick.offsetY - player.HEIGHT / 2;
+    const stickPosY = player.y - player.stick.offsetY - player.S_HEIGHT / 2;
     const leftHandX = stickPosX - Math.sin(player.stick.angle * (Math.PI/180)) * -player.stick.HEIGHT * player.stick.LEFT_JOIN.y / 2 + Math.cos(player.stick.angle * (Math.PI/180)) * player.stick.WIDTH * player.stick.LEFT_JOIN.x / 2;
     const leftHandY = stickPosY + Math.cos(player.stick.angle * (Math.PI/180)) * -player.stick.HEIGHT * player.stick.LEFT_JOIN.y / 2 + Math.sin(player.stick.angle * (Math.PI/180)) * player.stick.WIDTH * player.stick.LEFT_JOIN.x / 2;
     const rightHandX = stickPosX - Math.sin(player.stick.angle * (Math.PI/180)) * -player.stick.HEIGHT * player.stick.RIGHT_JOIN.y / 2 + Math.cos(player.stick.angle * (Math.PI/180)) * player.stick.WIDTH * player.stick.RIGHT_JOIN.x / 2;
@@ -601,11 +609,14 @@ setInterval(() => {
 refreshComputedRegion();
 });
 
+//region DELTATIME TIMER
 setInterval(() => {
     deltatime = 25 / fpsCounter;
     fpsCounter = 0;
 }, 100);
+//endregion
 
+//region INPUTS
 document.addEventListener("mousemove", (e) => {
     mouse.x = e.clientX / canvas.clientWidth * canvas.width;
     mouse.y = e.clientY / canvas.clientHeight * canvas.height;
@@ -624,3 +635,4 @@ document.addEventListener("mouseup", (e) => {
         player.willJump = true;
     }
 });
+//endregion
