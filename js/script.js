@@ -470,6 +470,10 @@ setInterval(() => {
     const leftUpperArmCenterY = (leftShoulderY + leftElbow.y) / 2;
     const leftLowerArmCenterX = (leftHandX + leftElbow.x) / 2;
     const leftLowerArmCenterY = (leftHandY + leftElbow.y) / 2;
+    const rightUpperArmCenterX = (rightShoulderX + rightElbow.x) / 2;
+    const rightUpperArmCenterY = (rightShoulderY + rightElbow.y) / 2;
+    const rightLowerArmCenterX = (rightHandX + rightElbow.x) / 2;
+    const rightLowerArmCenterY = (rightHandY + rightElbow.y) / 2;
 
     // angles
     let leftUpperArmAngle = Math.atan((leftShoulderY - leftElbow.y) / (leftShoulderX - leftElbow.x)) * (180 / Math.PI);
@@ -482,12 +486,26 @@ setInterval(() => {
     if (leftHandX > leftElbow.x) {
         leftLowerArmAngle += 180;
     }
+    let rightUpperArmAngle = Math.atan((rightShoulderY - rightElbow.y) / (rightShoulderX - rightElbow.x)) * (180 / Math.PI);
+    rightUpperArmAngle -= 90;
+    if (rightShoulderX > rightElbow.x) {
+        rightUpperArmAngle += 180;
+    }
+    let rightLowerArmAngle = Math.atan((rightHandY - rightElbow.y) / (rightHandX - rightElbow.x)) * (180 / Math.PI);
+    rightLowerArmAngle += 90;
+    if (rightHandX > rightElbow.x) {
+        rightLowerArmAngle += 180;
+    }
 
     // sprite positions
     const leftUpperArmX = leftUpperArmCenterX - Math.sin(leftUpperArmAngle * (Math.PI/180)) * player.upper_arm.CENTER_OFFSET_Y - Math.cos(leftUpperArmAngle * (Math.PI/180)) * player.upper_arm.CENTER_OFFSET_X;
     const leftUpperArmY = leftUpperArmCenterY + Math.cos(leftUpperArmAngle * (Math.PI/180)) * player.upper_arm.CENTER_OFFSET_Y - Math.sin(leftUpperArmAngle * (Math.PI/180)) * player.upper_arm.CENTER_OFFSET_X;
     const leftLowerArmX = leftLowerArmCenterX + Math.sin(leftLowerArmAngle * (Math.PI/180)) * player.lower_arm.CENTER_OFFSET_Y - Math.cos(leftLowerArmAngle * (Math.PI/180)) * player.lower_arm.CENTER_OFFSET_X;
     const leftLowerArmY = leftLowerArmCenterY - Math.cos(leftLowerArmAngle * (Math.PI/180)) * player.lower_arm.CENTER_OFFSET_Y - Math.sin(leftLowerArmAngle * (Math.PI/180)) * player.lower_arm.CENTER_OFFSET_X;
+    const rightUpperArmX = rightUpperArmCenterX - Math.sin(rightUpperArmAngle * (Math.PI/180)) * player.upper_arm.CENTER_OFFSET_Y + Math.cos(rightUpperArmAngle * (Math.PI/180)) * player.upper_arm.CENTER_OFFSET_X;
+    const rightUpperArmY = rightUpperArmCenterY + Math.cos(rightUpperArmAngle * (Math.PI/180)) * player.upper_arm.CENTER_OFFSET_Y + Math.sin(rightUpperArmAngle * (Math.PI/180)) * player.upper_arm.CENTER_OFFSET_X;
+    const rightLowerArmX = rightLowerArmCenterX + Math.sin(rightLowerArmAngle * (Math.PI/180)) * player.lower_arm.CENTER_OFFSET_Y + Math.cos(rightLowerArmAngle * (Math.PI/180)) * player.lower_arm.CENTER_OFFSET_X;
+    const rightLowerArmY = rightLowerArmCenterY - Math.cos(rightLowerArmAngle * (Math.PI/180)) * player.lower_arm.CENTER_OFFSET_Y + Math.sin(rightLowerArmAngle * (Math.PI/180)) * player.lower_arm.CENTER_OFFSET_X;
 
     // draw sprites
     ctx.translate(leftUpperArmX, leftUpperArmY - camera.y);
@@ -502,17 +520,17 @@ setInterval(() => {
     ctx.rotate(-leftLowerArmAngle * (Math.PI / 180));
     ctx.translate(-leftLowerArmX, -(leftLowerArmY - camera.y));
 
-    // upper arms
-    const upperArmX = 200;
-    const upperArmY = 200;
-    ctx.drawImage(player.S_LEFT_LOWER_ARM, upperArmX - player.lower_arm.WIDTH / 2, upperArmY - player.lower_arm.HEIGHT / 2, player.lower_arm.WIDTH, player.lower_arm.HEIGHT);
-    const upperArmShoulderX = upperArmX + player.lower_arm.TOP_JOIN.x * player.lower_arm.WIDTH * 0.5;
-    const upperArmShoulderY = upperArmY - player.lower_arm.TOP_JOIN.y * player.lower_arm.HEIGHT * 0.5;
-    const upperArmElbowX = upperArmX + player.lower_arm.BOTTOM_JOIN.x * player.lower_arm.WIDTH * 0.5;
-    const upperArmElbowY = upperArmY - player.lower_arm.BOTTOM_JOIN.y * player.lower_arm.HEIGHT * 0.5;
+    ctx.translate(rightUpperArmX, rightUpperArmY - camera.y);
+    ctx.rotate(rightUpperArmAngle * (Math.PI / 180));
+    ctx.drawImage(player.S_RIGHT_UPPER_ARM, -player.upper_arm.WIDTH / 2, -player.upper_arm.HEIGHT / 2, player.upper_arm.WIDTH, player.upper_arm.HEIGHT);
+    ctx.rotate(-rightUpperArmAngle * (Math.PI / 180));
+    ctx.translate(-rightUpperArmX, -(rightUpperArmY - camera.y));
 
-    const upperArmCenterX = (upperArmShoulderX + upperArmElbowX) / 2;
-    const upperArmCenterY = (upperArmShoulderY + upperArmElbowY) / 2;
+    ctx.translate(rightLowerArmX, rightLowerArmY - camera.y);
+    ctx.rotate(rightLowerArmAngle * (Math.PI / 180));
+    ctx.drawImage(player.S_RIGHT_LOWER_ARM, -player.lower_arm.WIDTH / 2, -player.lower_arm.HEIGHT / 2, player.lower_arm.WIDTH, player.lower_arm.HEIGHT);
+    ctx.rotate(-rightLowerArmAngle * (Math.PI / 180));
+    ctx.translate(-rightLowerArmX, -(rightLowerArmY - camera.y));
     //endregion
 
     // stick
@@ -521,12 +539,6 @@ setInterval(() => {
     ctx.drawImage(player.S_STICK, -player.stick.WIDTH / 2, -player.stick.HEIGHT / 2, player.stick.WIDTH, player.stick.HEIGHT);
     ctx.rotate(-player.stick.angle * (Math.PI / 180));
     ctx.translate(-(player.x + player.stick.offsetX), -(player.y - camera.y - player.stick.offsetY - player.HEIGHT / 2));
-
-    ctx.fillStyle = "red";
-    ctx.fillRect(upperArmShoulderX - 2, upperArmShoulderY - 2, 4, 4);
-    ctx.fillRect(upperArmElbowX - 2, upperArmElbowY - 2, 4, 4);
-    ctx.fillRect(upperArmCenterX - 2, upperArmCenterY - 2, 4, 4);
-    ctx.fillRect(upperArmX - 2, upperArmY - 2, 4, 4);
 
     if (DEBUG) {
         // hitbox
@@ -556,8 +568,8 @@ setInterval(() => {
         ctx.stroke();
 
         ctx.fillStyle = "green";
-        ctx.fillRect(leftLowerArmX - 3, leftLowerArmY - 3 - camera.y, 6, 6);
-        ctx.fillRect(leftLowerArmCenterX - 3, leftLowerArmCenterY - 3 - camera.y, 6, 6);
+        ctx.fillRect(rightUpperArmX - 3, rightUpperArmY - 3 - camera.y, 6, 6);
+        ctx.fillRect(rightUpperArmCenterX - 3, rightUpperArmCenterY - 3 - camera.y, 6, 6);
     }
     //endregion
 
