@@ -6,6 +6,7 @@ canvas.width = 2000;
 canvas.height = 2000 * canvas.clientHeight / canvas.clientWidth;
 
 //region CONSTANTS
+const DEBUG = false;
 const GROUND_FRICTION = 0.4;
 const GRAVITY = 0.16;
 const STICK_GROUNDED_DISTANCE = 40;
@@ -38,18 +39,39 @@ let player = {
         loadingState: 0,
         loading: false,
 
-        HEIGHT: 100,
-        WIDTH: 20
+        HEIGHT: 121,
+        WIDTH: 58
     },
+    head_index: 0,
 
     WIDTH: 100,
-    HEIGHT: 100,
+    HEIGHT: 121,
     FORCE: 11,
     MAX_ANGLE: 50,
     LOADING_TIME: 100,
     HIT_TIME: 15,
-    LOADING_DISTANCE: 50
+    LOADING_DISTANCE: 50,
+    HEAD_HEIGHT: 1,
+
+    S_HEAD: [],
+    S_TORSO: new Image(),
+    S_STICK: new Image(),
+    S_LEFT_UPPER_ARM: new Image(),
+    S_LEFT_LOWER_ARM: new Image(),
+    S_RIGHT_UPPER_ARM: new Image(),
+    S_RIGHT_LOWER_ARM: new Image(),
 };
+for (let i = -6; i <= 6; i++) {
+    let newHead = new Image();
+    newHead.src = `images/player/head/head${i}.png`;
+    player.S_HEAD.unshift(newHead);
+}
+player.S_TORSO.src = "images/player/torso.png";
+player.S_STICK.src = "images/player/stick.png";
+player.S_LEFT_UPPER_ARM.src = "images/player/left-upper-arm.png";
+player.S_LEFT_LOWER_ARM.src = "images/player/left-lower-arm.png";
+player.S_RIGHT_UPPER_ARM.src = "images/player/right-upper-arm.png";
+player.S_RIGHT_LOWER_ARM.src = "images/player/right-lower-arm.png";
 
 // camera
 let camera = {
@@ -180,6 +202,8 @@ function spawnParticles(number = 7, randomVelocityX = 2.5, randomVelocityY = 3, 
 fetch('js/level.json')
   .then((response) => response.json())
   .then((json) => level = json).then(() => {
+const headWidth = player.S_HEAD[0].width * player.WIDTH / player.S_TORSO.width;
+const headHeight = player.S_HEAD[0].height * headWidth / player.S_HEAD[0].width;
 setInterval(() => {
     //region COMPUTED WALLS
     if (-player.y < computedRegionBottom) {
@@ -230,6 +254,9 @@ setInterval(() => {
 
     // stick clamp angle
     player.stick.angle = Math.min(Math.max(player.stick.angle, -player.MAX_ANGLE), player.MAX_ANGLE);
+
+    // head index
+    player.head_index = Math.round(player.stick.angle / player.MAX_ANGLE * 6) + 6;
 
     // stick loading
     if (player.stick.loading) {
@@ -322,19 +349,36 @@ setInterval(() => {
         ctx.fillRect(wall.x1, -camera.y - wall.y1, wall.x2 - wall.x1, wall.y1 - wall.y2);
     }
 
-    // player
-    ctx.fillStyle = "red";
-    ctx.fillRect(player.x - player.WIDTH / 2, player.y - player.HEIGHT - camera.y, player.WIDTH, player.HEIGHT);
+    //region PLAYER
+    // torso
+    ctx.drawImage(player.S_TORSO, player.x - player.WIDTH / 2, player.y - player.HEIGHT - camera.y, player.WIDTH, player.HEIGHT);
+
+    // head
+    ctx.drawImage(player.S_HEAD[player.head_index], player.x - headWidth / 2, player.y - headHeight / 2 - camera.y - player.HEAD_HEIGHT * player.HEIGHT, headWidth, headHeight);
 
     // stick
-    ctx.fillStyle = "blue";
     player.stick.offsetX = Math.sin(player.stick.angle * (Math.PI / 180)) * player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME;
     player.stick.offsetY = Math.cos(player.stick.angle * (Math.PI / 180)) * player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME;
     ctx.translate(player.x + player.stick.offsetX, player.y - camera.y - player.stick.offsetY - player.HEIGHT / 2);
     ctx.rotate(player.stick.angle * (Math.PI / 180));
-    ctx.fillRect(-player.stick.WIDTH / 2, -player.stick.HEIGHT / 2, player.stick.WIDTH, player.stick.HEIGHT);
+    ctx.drawImage(player.S_STICK, -player.stick.WIDTH / 2, -player.stick.HEIGHT / 2, player.stick.WIDTH, player.stick.HEIGHT);
     ctx.rotate(-player.stick.angle * (Math.PI / 180));
     ctx.translate(-(player.x + player.stick.offsetX), -(player.y - camera.y - player.stick.offsetY - player.HEIGHT / 2));
+
+    if (DEBUG) {
+        // hitbox
+        ctx.strokeStyle = "red";
+        ctx.strokeRect(player.x - player.WIDTH / 2, player.y - player.HEIGHT - camera.y, player.WIDTH, player.HEIGHT);
+
+        // stick
+        ctx.strokeStyle = "blue";
+        ctx.translate(player.x + player.stick.offsetX, player.y - camera.y - player.stick.offsetY - player.HEIGHT / 2);
+        ctx.rotate(player.stick.angle * (Math.PI / 180));
+        ctx.strokeRect(-player.stick.WIDTH / 2, -player.stick.HEIGHT / 2, player.stick.WIDTH, player.stick.HEIGHT);
+        ctx.rotate(-player.stick.angle * (Math.PI / 180));
+        ctx.translate(-(player.x + player.stick.offsetX), -(player.y - camera.y - player.stick.offsetY - player.HEIGHT / 2));
+    }
+    //endregion
 
     // particles
     for (let particle of particles) {
