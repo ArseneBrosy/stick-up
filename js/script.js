@@ -58,13 +58,31 @@ let player = {
         HEIGHT: 63,
         LENGTH: 0,
 
-        SHOULDER_JOIN: {
+        TOP_JOIN: {
             x: 0,
             y: 0.5
         },
-        ELBOW_JOIN: {
+        BOTTOM_JOIN: {
             x: 0,
             y: -0.7
+        },
+
+        CENTER_OFFSET_X: 0,
+        CENTER_OFFSET_Y: 0
+    },
+
+    lower_arm: {
+        WIDTH: 23,
+        HEIGHT: 64,
+        LENGTH: 0,
+
+        TOP_JOIN: {
+            x: 0,
+            y: 0.7
+        },
+        BOTTOM_JOIN: {
+            x: 0,
+            y: -0.9
         },
 
         CENTER_OFFSET_X: 0,
@@ -79,7 +97,6 @@ let player = {
     HIT_TIME: 15,
     LOADING_DISTANCE: 50,
     HEAD_HEIGHT: 1,
-    LOWER_ARM_LENGHT: 0,
 
     S_HEAD: [],
     S_TORSO: new Image(),
@@ -90,12 +107,12 @@ let player = {
     S_RIGHT_LOWER_ARM: new Image(),
 
     LEFT_JOIN: {
-        x: 0.9,
-        y: 0.65
+        x: 0.85,
+        y: 0.67
     },
     RIGHT_JOIN: {
-        x: -0.9,
-        y: 0.65
+        x: -0.85,
+        y: 0.67
     },
 };
 for (let i = -6; i <= 6; i++) {
@@ -109,13 +126,18 @@ player.S_LEFT_UPPER_ARM.src = "images/player/left-upper-arm.png";
 player.S_LEFT_LOWER_ARM.src = "images/player/left-lower-arm.png";
 player.S_RIGHT_UPPER_ARM.src = "images/player/right-upper-arm.png";
 player.S_RIGHT_LOWER_ARM.src = "images/player/right-lower-arm.png";
-const UPPER_ARM_LENGTH_X = (player.upper_arm.SHOULDER_JOIN.x - player.upper_arm.ELBOW_JOIN.x) * player.upper_arm.WIDTH * 0.5;
-const UPPER_ARM_LENGTH_Y = (player.upper_arm.SHOULDER_JOIN.y - player.upper_arm.ELBOW_JOIN.y) * player.upper_arm.HEIGHT * 0.5;
-player.upper_arm.LENGHT = Math.sqrt(UPPER_ARM_LENGTH_X ** 2 + UPPER_ARM_LENGTH_Y ** 2);
-player.LOWER_ARM_LENGHT = player.upper_arm.LENGHT;
 
-player.upper_arm.CENTER_OFFSET_X = (player.upper_arm.SHOULDER_JOIN.x + player.upper_arm.ELBOW_JOIN.x) * player.upper_arm.WIDTH / 4;
-player.upper_arm.CENTER_OFFSET_Y = -(player.upper_arm.SHOULDER_JOIN.y + player.upper_arm.ELBOW_JOIN.y) * player.upper_arm.HEIGHT / 4;
+const UPPER_ARM_LENGTH_X = (player.upper_arm.TOP_JOIN.x - player.upper_arm.BOTTOM_JOIN.x) * player.upper_arm.WIDTH * 0.5;
+const UPPER_ARM_LENGTH_Y = (player.upper_arm.TOP_JOIN.y - player.upper_arm.BOTTOM_JOIN.y) * player.upper_arm.HEIGHT * 0.5;
+player.upper_arm.LENGHT = Math.sqrt(UPPER_ARM_LENGTH_X ** 2 + UPPER_ARM_LENGTH_Y ** 2);
+const LOWER_ARM_LENGTH_X = (player.lower_arm.TOP_JOIN.x - player.lower_arm.BOTTOM_JOIN.x) * player.lower_arm.WIDTH * 0.5;
+const LOWER_ARM_LENGTH_Y = (player.lower_arm.TOP_JOIN.y - player.lower_arm.BOTTOM_JOIN.y) * player.lower_arm.HEIGHT * 0.5;
+player.lower_arm.LENGHT = Math.sqrt(LOWER_ARM_LENGTH_X ** 2 + LOWER_ARM_LENGTH_Y ** 2);
+
+player.upper_arm.CENTER_OFFSET_X = (player.upper_arm.TOP_JOIN.x + player.upper_arm.BOTTOM_JOIN.x) * player.upper_arm.WIDTH / 4;
+player.upper_arm.CENTER_OFFSET_Y = -(player.upper_arm.TOP_JOIN.y + player.upper_arm.BOTTOM_JOIN.y) * player.upper_arm.HEIGHT / 4;
+player.lower_arm.CENTER_OFFSET_X = (player.lower_arm.TOP_JOIN.x + player.lower_arm.BOTTOM_JOIN.x) * player.lower_arm.WIDTH / 4;
+player.lower_arm.CENTER_OFFSET_Y = -(player.lower_arm.TOP_JOIN.y + player.lower_arm.BOTTOM_JOIN.y) * player.lower_arm.HEIGHT / 4;
 
 // camera
 let camera = {
@@ -434,18 +456,20 @@ setInterval(() => {
     // hands
     const stickPosX = player.x + player.stick.offsetX;
     const stickPosY = player.y - player.stick.offsetY - player.HEIGHT / 2;
-    const leftHandX = stickPosX - Math.sin(player.stick.angle * (Math.PI/180)) * -player.stick.HEIGHT * player.stick.LEFT_JOIN.y / 2 + Math.cos(player.stick.angle * (Math.PI/180)) * player.stick.WIDTH * player.LEFT_JOIN.x / 2;
-    const leftHandY = stickPosY + Math.cos(player.stick.angle * (Math.PI/180)) * -player.stick.HEIGHT * player.stick.LEFT_JOIN.y / 2 + Math.sin(player.stick.angle * (Math.PI/180)) * player.stick.WIDTH * player.LEFT_JOIN.x / 2;
-    const rightHandX = stickPosX - Math.sin(player.stick.angle * (Math.PI/180)) * -player.stick.HEIGHT * player.stick.RIGHT_JOIN.y / 2 + Math.cos(player.stick.angle * (Math.PI/180)) * player.stick.WIDTH * player.RIGHT_JOIN.x / 2;
-    const rightHandY = stickPosY + Math.cos(player.stick.angle * (Math.PI/180)) * -player.stick.HEIGHT * player.stick.RIGHT_JOIN.y / 2 + Math.sin(player.stick.angle * (Math.PI/180)) * player.stick.WIDTH * player.RIGHT_JOIN.x / 2;
+    const leftHandX = stickPosX - Math.sin(player.stick.angle * (Math.PI/180)) * -player.stick.HEIGHT * player.stick.LEFT_JOIN.y / 2 + Math.cos(player.stick.angle * (Math.PI/180)) * player.stick.WIDTH * player.stick.LEFT_JOIN.x / 2;
+    const leftHandY = stickPosY + Math.cos(player.stick.angle * (Math.PI/180)) * -player.stick.HEIGHT * player.stick.LEFT_JOIN.y / 2 + Math.sin(player.stick.angle * (Math.PI/180)) * player.stick.WIDTH * player.stick.LEFT_JOIN.x / 2;
+    const rightHandX = stickPosX - Math.sin(player.stick.angle * (Math.PI/180)) * -player.stick.HEIGHT * player.stick.RIGHT_JOIN.y / 2 + Math.cos(player.stick.angle * (Math.PI/180)) * player.stick.WIDTH * player.stick.RIGHT_JOIN.x / 2;
+    const rightHandY = stickPosY + Math.cos(player.stick.angle * (Math.PI/180)) * -player.stick.HEIGHT * player.stick.RIGHT_JOIN.y / 2 + Math.sin(player.stick.angle * (Math.PI/180)) * player.stick.WIDTH * player.stick.RIGHT_JOIN.x / 2;
 
     // elbows
-    const leftElbow = circlesIntersections(leftShoulderX, leftHandX, leftShoulderY, leftHandY, player.upper_arm.LENGHT, player.LOWER_ARM_LENGHT, 0);
-    const rightElbow = circlesIntersections(rightShoulderX, rightHandX, rightShoulderY, rightHandY, player.upper_arm.LENGHT, player.LOWER_ARM_LENGHT, 1);
+    const leftElbow = circlesIntersections(leftShoulderX, leftHandX, leftShoulderY, leftHandY, player.upper_arm.LENGHT, player.lower_arm.LENGHT, 0);
+    const rightElbow = circlesIntersections(rightShoulderX, rightHandX, rightShoulderY, rightHandY, player.upper_arm.LENGHT, player.lower_arm.LENGHT, 1);
 
     // centers
     const leftUpperArmCenterX = (leftShoulderX + leftElbow.x) / 2;
     const leftUpperArmCenterY = (leftShoulderY + leftElbow.y) / 2;
+    const leftLowerArmCenterX = (leftHandX + leftElbow.x) / 2;
+    const leftLowerArmCenterY = (leftHandY + leftElbow.y) / 2;
 
     // angles
     let leftUpperArmAngle = Math.atan((leftShoulderY - leftElbow.y) / (leftShoulderX - leftElbow.x)) * (180 / Math.PI);
@@ -453,10 +477,17 @@ setInterval(() => {
     if (leftShoulderX > leftElbow.x) {
         leftUpperArmAngle += 180;
     }
+    let leftLowerArmAngle = Math.atan((leftHandY - leftElbow.y) / (leftHandX - leftElbow.x)) * (180 / Math.PI);
+    leftLowerArmAngle += 90;
+    if (leftHandX > leftElbow.x) {
+        leftLowerArmAngle += 180;
+    }
 
     // sprite positions
     const leftUpperArmX = leftUpperArmCenterX - Math.sin(leftUpperArmAngle * (Math.PI/180)) * player.upper_arm.CENTER_OFFSET_Y - Math.cos(leftUpperArmAngle * (Math.PI/180)) * player.upper_arm.CENTER_OFFSET_X;
     const leftUpperArmY = leftUpperArmCenterY + Math.cos(leftUpperArmAngle * (Math.PI/180)) * player.upper_arm.CENTER_OFFSET_Y - Math.sin(leftUpperArmAngle * (Math.PI/180)) * player.upper_arm.CENTER_OFFSET_X;
+    const leftLowerArmX = leftLowerArmCenterX + Math.sin(leftLowerArmAngle * (Math.PI/180)) * player.lower_arm.CENTER_OFFSET_Y - Math.cos(leftLowerArmAngle * (Math.PI/180)) * player.lower_arm.CENTER_OFFSET_X;
+    const leftLowerArmY = leftLowerArmCenterY - Math.cos(leftLowerArmAngle * (Math.PI/180)) * player.lower_arm.CENTER_OFFSET_Y - Math.sin(leftLowerArmAngle * (Math.PI/180)) * player.lower_arm.CENTER_OFFSET_X;
 
     // draw sprites
     ctx.translate(leftUpperArmX, leftUpperArmY - camera.y);
@@ -465,14 +496,20 @@ setInterval(() => {
     ctx.rotate(-leftUpperArmAngle * (Math.PI / 180));
     ctx.translate(-leftUpperArmX, -(leftUpperArmY - camera.y));
 
+    ctx.translate(leftLowerArmX, leftLowerArmY - camera.y);
+    ctx.rotate(leftLowerArmAngle * (Math.PI / 180));
+    ctx.drawImage(player.S_LEFT_LOWER_ARM, -player.lower_arm.WIDTH / 2, -player.lower_arm.HEIGHT / 2, player.lower_arm.WIDTH, player.lower_arm.HEIGHT);
+    ctx.rotate(-leftLowerArmAngle * (Math.PI / 180));
+    ctx.translate(-leftLowerArmX, -(leftLowerArmY - camera.y));
+
     // upper arms
     const upperArmX = 200;
     const upperArmY = 200;
-    ctx.drawImage(player.S_LEFT_UPPER_ARM, upperArmX - player.upper_arm.WIDTH / 2, upperArmY - player.upper_arm.HEIGHT / 2, player.upper_arm.WIDTH, player.upper_arm.HEIGHT);
-    const upperArmShoulderX = upperArmX + player.upper_arm.SHOULDER_JOIN.x * player.upper_arm.WIDTH * 0.5;
-    const upperArmShoulderY = upperArmY - player.upper_arm.SHOULDER_JOIN.y * player.upper_arm.HEIGHT * 0.5;
-    const upperArmElbowX = upperArmX + player.upper_arm.ELBOW_JOIN.x * player.upper_arm.WIDTH * 0.5;
-    const upperArmElbowY = upperArmY - player.upper_arm.ELBOW_JOIN.y * player.upper_arm.HEIGHT * 0.5;
+    ctx.drawImage(player.S_LEFT_LOWER_ARM, upperArmX - player.lower_arm.WIDTH / 2, upperArmY - player.lower_arm.HEIGHT / 2, player.lower_arm.WIDTH, player.lower_arm.HEIGHT);
+    const upperArmShoulderX = upperArmX + player.lower_arm.TOP_JOIN.x * player.lower_arm.WIDTH * 0.5;
+    const upperArmShoulderY = upperArmY - player.lower_arm.TOP_JOIN.y * player.lower_arm.HEIGHT * 0.5;
+    const upperArmElbowX = upperArmX + player.lower_arm.BOTTOM_JOIN.x * player.lower_arm.WIDTH * 0.5;
+    const upperArmElbowY = upperArmY - player.lower_arm.BOTTOM_JOIN.y * player.lower_arm.HEIGHT * 0.5;
 
     const upperArmCenterX = (upperArmShoulderX + upperArmElbowX) / 2;
     const upperArmCenterY = (upperArmShoulderY + upperArmElbowY) / 2;
@@ -517,6 +554,10 @@ setInterval(() => {
         ctx.lineTo(rightElbow.x, rightElbow.y - camera.y);
         ctx.lineTo(rightHandX, rightHandY - camera.y);
         ctx.stroke();
+
+        ctx.fillStyle = "green";
+        ctx.fillRect(leftLowerArmX - 3, leftLowerArmY - 3 - camera.y, 6, 6);
+        ctx.fillRect(leftLowerArmCenterX - 3, leftLowerArmCenterY - 3 - camera.y, 6, 6);
     }
     //endregion
 
