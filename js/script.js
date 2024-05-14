@@ -93,9 +93,10 @@ let player = {
     HEIGHT: 121,
     FORCE: 11,
     MAX_ANGLE: 50,
+    ANGLE_OFFSET: 10,
     LOADING_TIME: 100,
     HIT_TIME: 15,
-    LOADING_DISTANCE: 50,
+    LOADING_DISTANCE: 40,
     HEAD_HEIGHT: 1,
 
     S_HEAD: [],
@@ -442,9 +443,11 @@ setInterval(() => {
     // head
     ctx.drawImage(player.S_HEAD[player.head_index], player.x - headWidth / 2, player.y - headHeight / 2 - camera.y - player.HEAD_HEIGHT * player.HEIGHT, headWidth, headHeight);
 
-    // stick
-    player.stick.offsetX = Math.sin(player.stick.angle * (Math.PI / 180)) * player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME;
-    player.stick.offsetY = Math.cos(player.stick.angle * (Math.PI / 180)) * player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME;
+    // stick offset
+    const stickAngleOffset = -Math.abs(player.stick.angle / player.MAX_ANGLE * player.ANGLE_OFFSET);
+    console.log(stickAngleOffset);
+    player.stick.offsetX = Math.sin(player.stick.angle * (Math.PI / 180)) * (player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME + stickAngleOffset);
+    player.stick.offsetY = Math.cos(player.stick.angle * (Math.PI / 180)) * (player.LOADING_DISTANCE * player.stick.loadingState / player.LOADING_TIME + stickAngleOffset);
 
     //region JOINS
     // shoulders
@@ -566,10 +569,6 @@ setInterval(() => {
         ctx.lineTo(rightElbow.x, rightElbow.y - camera.y);
         ctx.lineTo(rightHandX, rightHandY - camera.y);
         ctx.stroke();
-
-        ctx.fillStyle = "green";
-        ctx.fillRect(rightUpperArmX - 3, rightUpperArmY - 3 - camera.y, 6, 6);
-        ctx.fillRect(rightUpperArmCenterX - 3, rightUpperArmCenterY - 3 - camera.y, 6, 6);
     }
     //endregion
 
