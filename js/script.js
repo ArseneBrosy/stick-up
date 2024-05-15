@@ -13,7 +13,8 @@ const CAMERA_ZONE_TOP = 0.5;
 const CAMERA_ZONE_BOTTOM = 0.25;
 const CAMERA_SPEED = 6;
 const VIEW_WIDTH = 2000;
-const STICK_GROUNDED_WIDTH = 10;
+const STICK_GROUNDED_WIDTH = 20;
+const HIT_GROUND_PARTICLES = ["#24241b", "#2a2a20", "#1c1c17", "#2f2f1d"];
 //endregion
 
 //region VARIABLES
@@ -40,16 +41,16 @@ let player = {
         loadingState: 0,
         loading: false,
 
-        HEIGHT: 121,
+        HEIGHT: 161,
         WIDTH: 55,
 
         LEFT_JOIN: {
             x: 0.6,
-            y: -0.5
+            y: -0.2
         },
         RIGHT_JOIN: {
             x: -0.6,
-            y: -0.3
+            y: 0
         },
     },
     head_index: 0,
@@ -91,16 +92,16 @@ let player = {
     },
 
     WIDTH: 65,
-    HEIGHT: 145,
-    S_WIDTH: 100,
-    S_HEIGHT: 121,
+    HEIGHT: 188,
+    S_WIDTH: 101,
+    S_HEIGHT: 160,
     FORCE: 11,
-    MAX_ANGLE: 42,
+    MAX_ANGLE: 34,
     STICK_GROUND_HEIGHT: 5,
     LOADING_TIME: 100,
     HIT_TIME: 15,
     LOADING_DISTANCE: 35,
-    HEAD_HEIGHT: 1,
+    HEAD_HEIGHT: 1.03,
 
     S_HEAD: [],
     S_TORSO: new Image(),
@@ -112,11 +113,11 @@ let player = {
 
     LEFT_JOIN: {
         x: 0.85,
-        y: 0.67
+        y: 0.8
     },
     RIGHT_JOIN: {
         x: -0.85,
-        y: 0.67
+        y: 0.8
     },
 };
 for (let i = -6; i <= 6; i++) {
@@ -262,7 +263,7 @@ function spawnParticles(number = 7, randomVelocityX = 2.5, randomVelocityY = 3, 
             y: player.y - 10,
             velocityX: Math.random() * randomVelocityX * 2 - randomVelocityX,
             velocityY: -Math.random() * randomVelocityY,
-            color: "black",
+            color: HIT_GROUND_PARTICLES[Math.floor(Math.random() * HIT_GROUND_PARTICLES.length)],
             size: Math.random() * (randomSize[1] - randomSize[0]) + randomSize[0],
             ttl: Math.random() * (randomLifespan[1] - randomLifespan[0]) + randomLifespan[0],
             lifespan: Math.random() * (randomLifespan[1] - randomLifespan[0]) + randomLifespan[0]
@@ -545,11 +546,11 @@ setInterval(() => {
     //endregion
 
     // stick
-    ctx.translate(player.x + player.stick.offsetX, player.y - camera.y - player.stick.offsetY - player.HEIGHT / 2);
+    ctx.translate(player.x + player.stick.offsetX, player.y - camera.y - player.stick.offsetY - player.S_HEIGHT / 2);
     ctx.rotate(player.stick.angle * (Math.PI / 180));
     ctx.drawImage(player.S_STICK, -player.stick.WIDTH / 2, -player.stick.HEIGHT / 2, player.stick.WIDTH, player.stick.HEIGHT);
     ctx.rotate(-player.stick.angle * (Math.PI / 180));
-    ctx.translate(-(player.x + player.stick.offsetX), -(player.y - camera.y - player.stick.offsetY - player.HEIGHT / 2));
+    ctx.translate(-(player.x + player.stick.offsetX), -(player.y - camera.y - player.stick.offsetY - player.S_HEIGHT / 2));
 
     if (DEBUG) {
         // hitbox
@@ -558,11 +559,11 @@ setInterval(() => {
 
         // stick
         ctx.strokeStyle = "blue";
-        ctx.translate(player.x + player.stick.offsetX, player.y - camera.y - player.stick.offsetY - player.HEIGHT / 2);
+        ctx.translate(player.x + player.stick.offsetX, player.y - camera.y - player.stick.offsetY - player.S_HEIGHT / 2);
         ctx.rotate(player.stick.angle * (Math.PI / 180));
-        ctx.strokeRect(-player.stick.WIDTH / 2, -player.stick.HEIGHT / 2, player.stick.WIDTH, player.stick.HEIGHT);
+        ctx.strokeRect(-STICK_GROUNDED_WIDTH / 2, -player.stick.HEIGHT / 2, STICK_GROUNDED_WIDTH, player.stick.HEIGHT);
         ctx.rotate(-player.stick.angle * (Math.PI / 180));
-        ctx.translate(-(player.x + player.stick.offsetX), -(player.y - camera.y - player.stick.offsetY - player.HEIGHT / 2));
+        ctx.translate(-(player.x + player.stick.offsetX), -(player.y - camera.y - player.stick.offsetY - player.S_HEIGHT / 2));
 
         // arms
         ctx.lineWidth = 5;
